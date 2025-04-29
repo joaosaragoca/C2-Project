@@ -116,7 +116,7 @@ async def sys_action(interaction: discord.Interaction, comando: str):
         await interaction.response.defer(thinking=True) 
         normal_activity() 
         try:
-            output = subprocess.check_output(comando, shell=True, text=True, stderr=subprocess.STDOUT, encoding="cp850")
+            output = subprocess.check_output(comando, shell=True, text=True, stderr=subprocess.STDOUT, encoding=ENCODING)
             if not output:
                 output = "(Sem saída)"
         except subprocess.CalledProcessError as e:
@@ -131,7 +131,7 @@ async def process(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
         normal_activity()
         try:
-            output = subprocess.check_output("tasklist" if platform.system() == "Windows" else "ps aux", shell=True, text=True, stderr=subprocess.STDOUT, encoding="cp850")
+            output = subprocess.check_output("tasklist" if platform.system() == "Windows" else "ps aux", shell=True, text=True, stderr=subprocess.STDOUT, encoding=ENCODING)
             file_path = "process_list.txt"
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(output)
