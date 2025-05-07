@@ -174,6 +174,34 @@ async def cd(interaction: discord.Interaction, path: str):
             "⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
 
 
+@bot.tree.command(name="ls", description="Lista os arquivos e diretórios no path atual.")
+async def ls(interaction: discord.Interaction):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+
+        try:
+            path_atual = os.getcwd()
+            conteudo = os.listdir(path_atual)
+            if not conteudo:
+                await interaction.followup.send(f"📁 Path `{path_atual}` está vazio.")
+                return
+            resposta = "\n".join(conteudo)
+            if len(resposta) > 1900:
+                with open("dir_list.txt", "w", encoding="utf-8") as f:
+                    f.write(resposta)
+                await interaction.followup.send("📄 Conteúdo do diretório:", file=discord.File("dir_list.txt"))
+                os.remove("dir_list.txt")
+            else:
+                await interaction.followup.send(f"📂 Conteúdo de `{path_atual}`:\n```{resposta}```")
+
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao listar diretório: {e}")
+    else:
+        await interaction.response.send_message(
+            "⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
+
+
 @bot.tree.command(name="proc", description="Lista os processos em execução na máquina")
 async def process(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
