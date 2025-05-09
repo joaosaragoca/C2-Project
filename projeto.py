@@ -297,6 +297,20 @@ async def delete(interaction: discord.Interaction, path: str):
         await interaction.response.send_message("⚠ Apenas no canal da máquina correspondente!", ephemeral=True)
 
 
+@bot.tree.command(name="exec", description="Executa uma aplicação ou script na máquina")
+async def exec(interaction: discord.Interaction, path: str):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+        try:
+            subprocess.Popen(path, shell=True)
+            await interaction.followup.send(f"Aplicação/script `{path}` executado.")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao executar: {e}")
+    else:
+        await interaction.response.send_message("⚠ Apenas no canal da máquina correspondente!", ephemeral=True)
+
+
 @bot.tree.command(name="cat", description="Lê o conteúdo de um ficheiro na máquina.")
 async def cat(interaction: discord.Interaction, path: str):
     if interaction.channel.name.lower() == platform.node().lower():
