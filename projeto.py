@@ -343,6 +343,36 @@ async def delete(interaction: discord.Interaction, path: str):
         await interaction.response.send_message("⚠ Apenas no canal da máquina correspondente!", ephemeral=True)
 
 
+@bot.tree.command(name="find", description="Procura um ficheiro pelo nome e retorna o(s) caminho(s).")
+async def find(interaction: discord.Interaction, filename: str):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+
+        relevant_paths = [
+            os.path.expanduser("~"),                   
+            "C:\\Program Files",
+            "C:\\Program Files (x86)",
+            "C:\\Users\\Public",
+            "C:\\Temp"
+        ]
+
+        found = []
+
+        for base_path in relevant_paths:
+            for root, _, files in os.walk(base_path):
+                if filename in files:
+                    found.append(os.path.join(root, filename))
+
+        if found:
+            resposta = "\n".join(f"`{path}`" for path in found)
+            await interaction.followup.send(f"✅ Ficheiro **{filename}** encontrado em:\n{resposta}")
+        else:
+            await interaction.followup.send(f"❌ Ficheiro **{filename}** não encontrado nos diretórios conhecidos.")
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
 @bot.tree.command(name="exec", description="Executa uma aplicação ou script na máquina")
 async def exec(interaction: discord.Interaction, path: str):
     if interaction.channel.name.lower() == platform.node().lower():
