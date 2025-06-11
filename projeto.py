@@ -225,10 +225,23 @@ async def ls(interaction: discord.Interaction):
             lines = []
             for item in sorted(conteudo):
                 full_path = os.path.join(path_atual, item)
-                if os.path.isdir(full_path):
-                    lines.append(f"📁 {item}/")
-                else:
-                    lines.append(f"📄 {item}")
+                tipo = "📁" if os.path.isdir(full_path) else "📄"
+
+                # acrescenta o tamanho do ficheiro/pasta
+                try:
+                    tamanho = os.path.getsize(full_path)
+                    tamanho_str = f"{tamanho / 1024:.1f} KB" if tamanho < 1024**2 else f"{tamanho / 1024**2:.1f} MB"
+                except:
+                    tamanho_str = "?"
+
+                # acrescenta a data de modificação do ficheiro/pasta
+                try:
+                    data_mod = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(full_path)))
+                except:
+                    data_mod = "?"
+
+                lines.append(f"{tipo} {item:<30} | {tamanho_str:>8} | {data_mod}")
+
             resposta = "\n".join(lines)
 
             if len(resposta) > 1900:
@@ -279,6 +292,8 @@ async def location(interaction: discord.Interaction):
                 embed.add_field(name="País", value=data["country"], inline=True)
                 embed.add_field(name="Cidade", value=data["city"], inline=True)
                 embed.add_field(name="ISP", value=data["isp"], inline=False)
+                embed.add_field(name="LAT", value=data["lat"], inline=False)
+                embed.add_field(name="LON", value=data["lon"], inline=False)
 
                 await interaction.followup.send(embed=embed)
             else:
